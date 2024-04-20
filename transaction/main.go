@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gitlab.com/ihsansolusi/erd/devday/non-functional-test/telemetry"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -46,7 +47,10 @@ func main() {
 
 func cekSaldo(c *fiber.Ctx) (err error) {
 	accountNo := c.Params("acc")
-	cekDana(accountNo, c.UserContext())
+	err = cekDana(accountNo, c.UserContext())
+	if err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
 	return c.JSON(map[string]int{"saldo": 1000})
 }
 
@@ -57,29 +61,43 @@ func tarik(c *fiber.Ctx) (err error) {
 		c.Status(http.StatusBadRequest)
 		return c.JSON(map[string]string{"remark": err.Error()})
 	}
-	tarikDana(payload, c.UserContext())
+	err = tarikDana(payload, c.UserContext())
+	if err != nil {
+		return c.SendStatus(http.StatusBadRequest)
+	}
 	return c.SendStatus(http.StatusOK)
 }
 
-func cekDana(acc string, ctx context.Context) {
+func cekDana(acc string, ctx context.Context) (err error) {
 	ctx, span := tracer.Start(ctx, "cek-saldo")
 	span.SetAttributes(
 		attribute.String("account_no", acc),
 	)
 	defer span.End()
+	err = validasiRekening(acc, ctx)
+	if err != nil {
+		span.SetStatus(codes.Error, "cek dana rekening gagal")
+		return
+	}
 	shortProcess(ctx)
+	return
 }
 
-func tarikDana(tarik tarikTunai, ctx context.Context) {
+func tarikDana(tarik tarikTunai, ctx context.Context) (err error) {
 	ctx, span := tracer.Start(ctx, "tarik-dana")
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("account_no", tarik.AccountNo),
 		attribute.Int("nominal", tarik.Nominal),
 	)
-	validasiRekening(tarik.AccountNo, ctx)
+	err = validasiRekening(tarik.AccountNo, ctx)
+	if err != nil {
+		span.SetStatus(codes.Error, "tarik dana rekening gagal")
+		return
+	}
 	longProcess(ctx)
 	shortProcess(ctx)
+	return
 }
 
 func validasiRekening(acc string, ctx context.Context) (err error) {
@@ -87,7 +105,11 @@ func validasiRekening(acc string, ctx context.Context) (err error) {
 	defer span.End()
 	request := client.R()
 	propagator.Inject(ctx, propagation.HeaderCarrier(request.Header))
-	_, err = request.Get(fmt.Sprintf("http://localhost:3001/validate/%s", acc))
+	resp, err := request.Get(fmt.Sprintf("http://localhost:3001/validate/%s", acc))
+	if resp.StatusCode() != 200 {
+		span.SetStatus(codes.Error, "validasi rekening gagal")
+		return fmt.Errorf("validasi rekening gagal")
+	}
 	return
 }
 

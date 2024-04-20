@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	tracer     trace.Tracer
-	propagator propagation.TextMapPropagator
+	tracer        trace.Tracer
+	propagator    propagation.TextMapPropagator
+	statusOptions = []int{http.StatusOK, http.StatusBadRequest}
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 func validasi(c *fiber.Ctx) (err error) {
 	accountNo := c.Params("acc")
 	validasiRekening(accountNo, c.UserContext())
-	return c.SendStatus(http.StatusOK)
+	return c.SendStatus(statusOptions[rand.Intn(2)])
 }
 
 func validasiRekening(acc string, ctx context.Context) {
