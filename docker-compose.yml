@@ -12,6 +12,18 @@ services:
     networks:
       - backend
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - 8889:8889
+      - 9090:9090
+    networks:
+      - backend
+
   jaeger-collector:
     image: jaegertracing/jaeger-collector
     container_name: jaeger-collector
@@ -30,15 +42,22 @@ services:
   jaeger-query:
     image: jaegertracing/jaeger-query
     container_name: jaeger-query
+    volumes:
+      - "./jaeger/jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
     ports:
       - 16686:16686
-    command: ["--cassandra.keyspace=jaeger_v1_dc1"]
+    command: ["--cassandra.keyspace", "jaeger_v1_dc1", "--query.ui-config", "/etc/jaeger/jaeger-ui.json"]
     environment:
       - SPAN_STORAGE_TYPE=cassandra
       - CASSANDRA_SERVERS=cassandra
       - CASSANDRA_KEYSPACE=jaeger_v1_dc1
+      - METRIC_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVERS=http://prometheus:9090
+      - PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR=true
+      - PROMETHUES_QUERY_NORMALIZE_CALLS=true
+      - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
     depends_on:
-      - jaeger-collector
+      - otel-collector
     networks:
       - backend
 
