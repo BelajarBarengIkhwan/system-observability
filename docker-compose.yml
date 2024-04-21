@@ -1,12 +1,22 @@
 version: '3.7'
 
 services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    container_name: otel-collector
+    volumes:
+      - ./telemetry/otel-collector-config.yml:/etc/otelcol/otel-collector-config.yml
+    command: --config /etc/otelcol/otel-collector-config.yml
+    ports:
+      - 4318:4318
+    networks:
+      - backend
+
   jaeger-collector:
     image: jaegertracing/jaeger-collector
     container_name: jaeger-collector
     ports:
       - 14269:14269
-      - 4318:4318
     command: ["--cassandra.keyspace=jaeger_v1_dc1"]
     environment:
       - SPAN_STORAGE_TYPE=cassandra
@@ -14,6 +24,8 @@ services:
       - CASSANDRA_KEYSPACE=jaeger_v1_dc1
     networks:
       - backend
+    depends_on:
+      - otel-collector
 
   jaeger-query:
     image: jaegertracing/jaeger-query
