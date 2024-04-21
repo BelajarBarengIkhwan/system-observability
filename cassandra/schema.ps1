@@ -1,0 +1,1 @@
+docker run --name cassandra-schema --network backend jaegertracing/jaeger-cassandra-schema
