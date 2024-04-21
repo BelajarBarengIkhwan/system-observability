@@ -19,7 +19,6 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command: --config.file=/etc/prometheus/prometheus.yml
     ports:
-      - 8889:8889
       - 9090:9090
     networks:
       - backend
@@ -46,7 +45,7 @@ services:
       - "./jaeger/jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
     ports:
       - 16686:16686
-    command: ["--cassandra.keyspace", "jaeger_v1_dc1", "--query.ui-config", "/etc/jaeger/jaeger-ui.json"]
+    command: --query.ui-config /etc/jaeger/jaeger-ui.json
     environment:
       - SPAN_STORAGE_TYPE=cassandra
       - CASSANDRA_SERVERS=cassandra
