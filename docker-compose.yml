@@ -19,7 +19,7 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    command: --config.file=/etc/prometheus/prometheus.yml --web.enable-remote-write-receiver
+    command: --config.file=/etc/prometheus/prometheus.yml
     ports:
       - 9090:9090
     networks:
@@ -47,7 +47,6 @@ services:
     container_name: jaeger-collector
     ports:
       - 14269:14269
-    command: ["--cassandra.keyspace=jaeger_v1_dc1"]
     environment:
       - SPAN_STORAGE_TYPE=cassandra
       - CASSANDRA_SERVERS=cassandra
@@ -60,12 +59,9 @@ services:
   jaeger-query:
     image: jaegertracing/jaeger-query
     container_name: jaeger-query
-    volumes:
-      - "./jaeger/jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
     ports:
       - 16686:16686
       - 16687:16687
-    command: --query.ui-config /etc/jaeger/jaeger-ui.json
     environment:
       - SPAN_STORAGE_TYPE=cassandra
       - CASSANDRA_SERVERS=cassandra
