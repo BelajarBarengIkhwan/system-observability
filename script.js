@@ -8,9 +8,9 @@ export const options = {
   // duration: '30s',
 
   stages: [
-    {duration: '1s', target: 20},
-    {duration: '3s', target: 20},
-    {duration: '1s', target: 0}
+    {duration: '5s', target: 50},
+    {duration: '20s', target: 50},
+    {duration: '5s', target: 0}
   ]
 
   // The following section contains configuration options for execution of this

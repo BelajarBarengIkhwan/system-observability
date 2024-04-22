@@ -5,6 +5,11 @@ receivers:
         endpoint: "0.0.0.0:4318"
 
 exporters:
+  prometheusremotewrite:
+      endpoint: http://prometheus:9090/api/v1/write
+      target_info:
+        enabled: true
+
   prometheus:
     endpoint: "0.0.0.0:8889"
 
@@ -29,4 +34,4 @@ service:
     # The receiver is just a dummy and never used; added to pass validation requiring at least one receiver in a pipeline.
     metrics/spanmetrics:
       receivers: [spanmetrics]
-      exporters: [prometheus]
+      exporters: [prometheus, prometheusremotewrite]

@@ -1,4 +1,5 @@
 version: '3.7'
+name: system-tracing
 
 services:
   otel-collector:
@@ -9,6 +10,7 @@ services:
     command: --config /etc/otelcol/otel-collector-config.yml
     ports:
       - 4318:4318
+      - 8889:8889
     networks:
       - backend
 
@@ -17,11 +19,28 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    command: --config.file=/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml --web.enable-remote-write-receiver
     ports:
       - 9090:9090
     networks:
       - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - ./prometheus/grafana.ini:/etc/grafana/grafana.ini
+      - ./prometheus/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - 4000:3000
+    networks:
+      - backend
+    depends_on:
+      - prometheus
 
   jaeger-collector:
     image: jaegertracing/jaeger-collector
@@ -45,13 +64,14 @@ services:
       - "./jaeger/jaeger-ui.json:/etc/jaeger/jaeger-ui.json"
     ports:
       - 16686:16686
+      - 16687:16687
     command: --query.ui-config /etc/jaeger/jaeger-ui.json
     environment:
       - SPAN_STORAGE_TYPE=cassandra
       - CASSANDRA_SERVERS=cassandra
       - CASSANDRA_KEYSPACE=jaeger_v1_dc1
-      - METRIC_STORAGE_TYPE=prometheus
-      - PROMETHEUS_SERVERS=http://prometheus:9090
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
       - PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR=true
       - PROMETHUES_QUERY_NORMALIZE_CALLS=true
       - PROMETHEUS_QUERY_NORMALIZE_DURATION=true
