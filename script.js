@@ -60,9 +60,17 @@ export const options = {
 // about authoring k6 scripts.
 //
 export default function() {
-  const resp = http.get('http://localhost:3000/saldo/IRN');
-  check(resp, {
-    'success': (r) => r.status === 200
+  const respSaldo = http.get('http://localhost:3000/saldo/IRN');
+  check(respSaldo, {
+    'success saldo': (r) => r.status === 200
+  })
+  sleep(1);
+  const respTarik = http.post('http://localhost:3000/tarik', {
+    'accountNo': 'IRN',
+    'amount': 1000
+  })
+  check(respTarik, {
+    'success tarik': (r) => r.status === 200
   })
   sleep(1);
 }
