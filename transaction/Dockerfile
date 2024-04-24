@@ -19,6 +19,4 @@ RUN chmod +x /apiserver
 
 EXPOSE 3000
 
-USER transaction:transaction
-
 ENTRYPOINT ["/apiserver"]

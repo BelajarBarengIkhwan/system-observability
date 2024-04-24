@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -18,9 +19,11 @@ import (
 )
 
 var (
-	tracer     trace.Tracer
-	propagator propagation.TextMapPropagator
-	client     resty.Client
+	tracer            trace.Tracer
+	propagator        propagation.TextMapPropagator
+	client            resty.Client
+	telemetryEndpoint = os.Getenv("TELEMETRY_ENDPOINT")
+	accountHost       = os.Getenv("ACCOUNT_HOST")
 )
 
 type tarikTunai struct {
@@ -29,9 +32,16 @@ type tarikTunai struct {
 }
 
 func main() {
+	if telemetryEndpoint == "" {
+		telemetryEndpoint = "http://localhost:4318"
+	}
+	if accountHost == "" {
+		accountHost = "http://localhost:3001"
+	}
+
 	ctx := context.Background()
 	propagator = telemetry.NewTelemetryPropagators()
-	tp := telemetry.NewHTTPTelemetryProvider("localhost:4318", "transaction-service", ctx)
+	tp := telemetry.NewHTTPTelemetryProvider(telemetryEndpoint, "transaction-service", ctx)
 	tracer = tp.Tracer("main")
 
 	client = *resty.New()
@@ -105,9 +115,10 @@ func validasiRekening(acc string, ctx context.Context) (err error) {
 	defer span.End()
 	request := client.R()
 	propagator.Inject(ctx, propagation.HeaderCarrier(request.Header))
-	resp, err := request.Get(fmt.Sprintf("http://localhost:3001/validate/%s", acc))
+	resp, err := request.Get(fmt.Sprintf("%s/validate/%s", accountHost, acc))
 	if resp.StatusCode() != 200 {
 		span.SetStatus(codes.Error, "validasi rekening gagal")
+		span.RecordError(err)
 		return fmt.Errorf("validasi rekening gagal")
 	}
 	return

@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gofiber/contrib/otelfiber/v2"
@@ -15,15 +16,20 @@ import (
 )
 
 var (
-	tracer        trace.Tracer
-	propagator    propagation.TextMapPropagator
-	statusOptions = []int{http.StatusOK, http.StatusBadRequest}
+	tracer            trace.Tracer
+	propagator        propagation.TextMapPropagator
+	statusOptions     = []int{http.StatusOK, http.StatusBadRequest}
+	telemetryEndpoint = os.Getenv("TELEMETRY_ENDPOINT")
 )
 
 func main() {
+	if telemetryEndpoint == "" {
+		telemetryEndpoint = "http://localhost:4318"
+	}
+
 	ctx := context.Background()
 	propagator = telemetry.NewTelemetryPropagators()
-	tp := telemetry.NewHTTPTelemetryProvider("localhost:4318", "account-service", ctx)
+	tp := telemetry.NewHTTPTelemetryProvider(telemetryEndpoint, "account-service", ctx)
 	tracer = tp.Tracer("main")
 
 	api := fiber.New()

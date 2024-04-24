@@ -18,10 +18,29 @@ services:
     build:
       dockerfile: ./account/Dockerfile
     container_name: account-services
+    environment:
+      - TELEMETRY_ENDPOINT=otel-collector:4318
     ports:
       - 3001:3001
     networks:
       - backend
+    depends_on:
+      - otel-collector
+
+  transaction-services:
+    build:
+      dockerfile: ./transaction/Dockerfile
+    container_name: transaction-services
+    environment:
+      - TELEMETRY_ENDPOINT=otel-collector:4318
+      - ACCOUNT_HOST=http://account-services:3001
+    ports:
+      - 3000:3000
+    networks:
+      - backend
+    depends_on:
+      - otel-collector
+      - account-services
 
   prometheus:
     image: prom/prometheus
